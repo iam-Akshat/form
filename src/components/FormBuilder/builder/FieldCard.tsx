@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Trash2, ChevronDown, ChevronUp, GripVertical } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { ValidationFields } from './ValidationFields';
-import { FIELD_TYPES, NUMBER_VARIANTS } from './constants';
-import type { FormField as TFormField } from './types';
+import { ValidationFields } from '../ValidationFields';
+import { FIELD_TYPES, NUMBER_VARIANTS } from '../constants';
+import type { FormField as TFormField } from '../types';
 import { UseFormReturn } from 'react-hook-form';
 import { FormControl, FormItem, FormLabel, FormDescription, FormField } from "@/components/ui/form"
 import { Input } from '@/components/ui/input';
@@ -96,12 +96,28 @@ export const FieldCard: React.FC<FieldCardProps> = ({ index, onRemove, form, isL
               <FormItem>
                 <FormLabel>Field Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter field name" {...field} />
+                  <Input placeholder="Enter field name" required {...field} />
                 </FormControl>
               </FormItem>
             )}
           />
-
+          <FormField
+            control={form.control}
+            name={`fields.${index}.defaultValue`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Default Value</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="Enter default value" 
+                    {...field} 
+                    value={field.value || ''}
+                    type={form.watch(`fields.${index}.type`) === 'number' ? 'number' : 'text'}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
           <FormField
             control={form.control}
             name={`fields.${index}.title`}

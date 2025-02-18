@@ -30,6 +30,7 @@ export const fieldSchema = z.object({
   title: z.string().min(1, "Question title is required"),
   type: z.enum(["text", "number", "select"]),
   required: z.boolean().optional(),
+  defaultValue: z.union([z.string(), z.number()]).optional(),
   variant: z.enum(["years", "temperature"]).optional(),
   validation: z.union([
     textValidationSchema,

@@ -20,60 +20,57 @@ export function useAutoSave<T>(
     error: null,
   });
 
-  const previousDataRef = useRef<T>();
+  const previousDataRef = useRef<T | null>(null);
   const isFirstRender = useRef(true);
-  const isInitialLoadRef = useRef(true);
 
-  // Create a stable reference to the debounced save function
+  const saveWithState = async (data: T) => {
+    setState((prev) => ({ ...prev, saving: true, error: null }));
+    try {
+      await saveFunction(data);
+      setState((prev) => ({
+        ...prev,
+        saving: false,
+        lastSaved: new Date(),
+        error: null,
+      }));
+      toast.success("Form saved successfully");
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to save";
+      setState((prev) => ({
+        ...prev,
+        saving: false,
+        error: errorMessage,
+      }));
+      toast.error("Failed to save form");
+    }
+  };
+
   const debouncedSave = useRef(
-    debounce(async (data: T) => {
-      // Don't save if this is the initial load
-      if (isInitialLoadRef.current) {
-        isInitialLoadRef.current = false;
-        return;
-      }
-
-      setState((prev) => ({ ...prev, saving: true, error: null }));
-      try {
-        await saveFunction(data);
-        setState((prev) => ({
-          ...prev,
-          saving: false,
-          lastSaved: new Date(),
-          error: null,
-        }));
-        toast.success("Form saved successfully");
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Failed to save";
-        setState((prev) => ({
-          ...prev,
-          saving: false,
-          error: errorMessage,
-        }));
-        toast.error("Failed to save form");
-      }
-    }, delay)
+    debounce(saveWithState, delay)
   ).current;
 
-  // Cleanup the debounced function on unmount
   useEffect(() => {
     return () => {
       debouncedSave.cancel();
     };
   }, [debouncedSave]);
 
-  // Handle data changes
   useEffect(() => {
-    // Skip the first render and set initial data
+    if (!data) return;
+
     if (isFirstRender.current) {
       isFirstRender.current = false;
       previousDataRef.current = data;
       return;
     }
 
-    // Only save if shouldAutoSave is true and the data has actually changed
-    if (shouldAutoSave && JSON.stringify(previousDataRef.current) !== JSON.stringify(data)) {
+    if (
+      shouldAutoSave && (
+        previousDataRef.current === null ||
+        JSON.stringify(previousDataRef.current) !== JSON.stringify(data)
+      )
+    ) {
       debouncedSave(data);
       previousDataRef.current = data;
     }

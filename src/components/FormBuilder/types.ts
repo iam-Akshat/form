@@ -27,6 +27,7 @@ export interface BaseField {
   name: string;
   title: string;
   required?: boolean;
+  defaultValue?: string | number;
 }
 
 export interface TextField extends BaseField {

@@ -8,8 +8,9 @@ import { Loader2 } from "lucide-react";
 import { FieldCard } from "./FieldCard";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { mockStorage } from "@/storage";
-import { formSchema } from "./validation";
-import type { FormConfiguration, FormField } from "./types";
+import { formSchema } from "../validation";
+import type { FormConfiguration, FormField } from "../types";
+import { isFormRenderable } from "../utils";
 import {
   DndContext,
   closestCenter,
@@ -31,23 +32,8 @@ const defaultField: FormField = {
   title: "",
   type: "",
   required: false,
+  defaultValue: "",
   validation: {},
-};
-
-// Validate if a field has enough data to be rendered
-const isFieldRenderable = (field: FormField) => {
-  if (!field.name || !field.title || !field.type) return false;
-  
-  if (field.type === 'select') {
-    return field.validation?.options && field.validation.options.length > 0;
-  }
-  
-  return true;
-};
-
-// Validate if the entire form has enough data
-const isFormRenderable = (fields: FormField[]) => {
-  return fields.length > 0 && fields.every(isFieldRenderable);
 };
 
 export const FormBuilder: React.FC = () => {
@@ -107,6 +93,7 @@ export const FormBuilder: React.FC = () => {
       await mockStorage.saveForm(formState);
       toast.success("Form saved successfully");
     } catch (error) {
+      console.error("Failed to save form:", error);
       toast.error("Failed to save form");
     }
   };

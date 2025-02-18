@@ -1,3 +1,5 @@
+import { FormConfiguration } from "./components/FormBuilder";
+
 export const mockStorage = {
   saveForm: async (data: any): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -14,7 +16,7 @@ export const mockStorage = {
     });
   },
 
-  loadForm: async () => {
+  loadForm: async (): Promise<FormConfiguration> => {
     return new Promise((resolve) => {
       setTimeout(() => {
         const data = localStorage.getItem("form_config");
