@@ -25,6 +25,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import FormRenderer from "./FormRenderer";
 
 const defaultField: FormField = {
   name: "",
@@ -83,70 +84,76 @@ export const FormBuilder: React.FC = () => {
   }, [form]);
 
   return (
-    <Form {...form}>
-      <form className="space-y-8">
-        {autoSaveState.error && (
-          <Alert variant="destructive">
-            <AlertDescription>{autoSaveState.error}</AlertDescription>
-          </Alert>
-        )}
+    <div className="container mx-auto p-6">
+      <div className="grid grid-cols-2 gap-8">
+        <div className="space-y-8">
+          <Form {...form}>
+            <form className="space-y-8">
+              {autoSaveState.error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{autoSaveState.error}</AlertDescription>
+                </Alert>
+              )}
 
-        <div className="flex items-center space-x-2">
-          <h2 className="text-lg font-semibold">Form Builder</h2>
-          {autoSaveState.saving ? (
-            <div className="flex items-center text-sm text-muted-foreground">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </div>
-          ) : autoSaveState.lastSaved ? (
-            <p className="text-sm text-muted-foreground">
-              Last saved: {autoSaveState.lastSaved.toLocaleTimeString()}
-            </p>
-          ) : null}
+              <div className="flex items-center space-x-2">
+                <h2 className="text-lg font-semibold">Form Builder</h2>
+                {autoSaveState.saving ? (
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </div>
+                ) : autoSaveState.lastSaved ? (
+                  <span className="text-sm text-muted-foreground">
+                    Last saved: {autoSaveState.lastSaved.toLocaleTimeString()}
+                  </span>
+                ) : null}
+              </div>
+
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={fields.map(field => field.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-4">
+                    {fields.map((field, index) => (
+                      <FieldCard
+                        key={field.id}
+                        id={field.id}
+                        index={index}
+                        onRemove={() => remove(index)}
+                        form={form}
+                        isLatest={index === fields.length - 1}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => append(defaultField)}
+              >
+                Add Field
+              </Button>
+            </form>
+          </Form>
         </div>
 
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={fields.map(field => field.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="space-y-4">
-              {fields.map((field, index) => (
-                <FieldCard
-                  key={field.id}
-                  id={field.id}
-                  index={index}
-                  onRemove={() => remove(index)}
-                  form={form}
-                  isLatest={index === fields.length - 1}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-
-        <div className="flex space-x-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => append(defaultField)}
-          >
-            Add Field
-          </Button>
+        <div className="space-y-8">
+          <h2 className="text-lg font-semibold">Form Preview</h2>
+          <FormRenderer
+            configuration={formState}
+            onSubmit={(data) => {
+              console.log("Form submitted with data:", data);
+            }}
+          />
         </div>
-
-        {form.formState.errors.fields && (
-          <Alert variant="destructive">
-            <AlertDescription>
-              {form.formState.errors.fields.message}
-            </AlertDescription>
-          </Alert>
-        )}
-      </form>
-    </Form>
+      </div>
+    </div>
   );
 };
