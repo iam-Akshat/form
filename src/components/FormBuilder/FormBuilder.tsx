@@ -80,6 +80,7 @@ export const FormBuilder: React.FC = () => {
               index={index}
               onRemove={() => remove(index)}
               form={form}
+              isLatest={index === fields.length - 1}
             />
           ))}
         </div>
