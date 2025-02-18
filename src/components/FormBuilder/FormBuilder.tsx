@@ -24,6 +24,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import {toast} from 'sonner';
 
 const defaultField: FormField = {
   name: "",
@@ -31,6 +32,22 @@ const defaultField: FormField = {
   type: "",
   required: false,
   validation: {},
+};
+
+// Validate if a field has enough data to be rendered
+const isFieldRenderable = (field: FormField) => {
+  if (!field.name || !field.title || !field.type) return false;
+  
+  if (field.type === 'select') {
+    return field.validation?.options && field.validation.options.length > 0;
+  }
+  
+  return true;
+};
+
+// Validate if the entire form has enough data
+const isFormRenderable = (fields: FormField[]) => {
+  return fields.length > 0 && fields.every(isFieldRenderable);
 };
 
 export const FormBuilder: React.FC = () => {
@@ -64,7 +81,35 @@ export const FormBuilder: React.FC = () => {
   };
 
   const formState = form.watch();
-  const autoSaveState = useAutoSave(formState, mockStorage.saveForm);
+  
+  // Only auto-save when the form is renderable
+  const shouldAutoSave = isFormRenderable(formState.fields);
+  const autoSaveState = useAutoSave(
+    formState,
+    mockStorage.saveForm,
+    2000,
+    shouldAutoSave
+  );
+
+  const handleSave = async () => {
+    const isValid = await form.trigger();
+    if (!isValid) {
+      toast.error("Please fill in all required fields correctly");
+      return;
+    }
+
+    if (!isFormRenderable(formState.fields)) {
+      toast.error("Please ensure all fields have the required data");
+      return;
+    }
+
+    try {
+      await mockStorage.saveForm(formState);
+      toast.success("Form saved successfully");
+    } catch (error) {
+      toast.error("Failed to save form");
+    }
+  };
 
   // Load saved form on mount
   useEffect(() => {
@@ -93,18 +138,27 @@ export const FormBuilder: React.FC = () => {
                 </Alert>
               )}
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Form Builder</h2>
-                {autoSaveState.saving ? (
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </div>
-                ) : autoSaveState.lastSaved ? (
-                  <span className="text-sm text-muted-foreground">
-                    Last saved: {autoSaveState.lastSaved.toLocaleTimeString()}
-                  </span>
-                ) : null}
+                <div className="flex items-center space-x-4">
+                  {autoSaveState.saving ? (
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </div>
+                  ) : autoSaveState.lastSaved && (
+                    <span className="text-sm text-muted-foreground">
+                      Last saved: {autoSaveState.lastSaved.toLocaleTimeString()}
+                    </span>
+                  )}
+                  <Button 
+                    type="button" 
+                    onClick={handleSave}
+                    variant="outline"
+                  >
+                    Save Form
+                  </Button>
+                </div>
               </div>
 
               <DndContext

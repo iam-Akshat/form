@@ -11,7 +11,8 @@ interface AutoSaveState {
 export function useAutoSave<T>(
   data: T,
   saveFunction: (data: T) => Promise<void>,
-  delay: number = 2000
+  delay: number = 2000,
+  shouldAutoSave: boolean = true
 ) {
   const [state, setState] = useState<AutoSaveState>({
     saving: false,
@@ -21,35 +22,37 @@ export function useAutoSave<T>(
 
   const previousDataRef = useRef<T>();
   const isFirstRender = useRef(true);
-
-  // Create the save function
-  const saveData = async (data: T) => {
-    setState((prev) => ({ ...prev, saving: true, error: null }));
-    try {
-      await saveFunction(data);
-      setState((prev) => ({
-        ...prev,
-        saving: false,
-        lastSaved: new Date(),
-        error: null,
-      }));
-      toast.success("Form saved successfully");
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to save";
-      setState((prev) => ({
-        ...prev,
-        saving: false,
-        error: errorMessage,
-      }));
-      toast.error("Failed to save form");
-    }
-  };
+  const isInitialLoadRef = useRef(true);
 
   // Create a stable reference to the debounced save function
   const debouncedSave = useRef(
-    debounce((data: T) => {
-      saveData(data);
+    debounce(async (data: T) => {
+      // Don't save if this is the initial load
+      if (isInitialLoadRef.current) {
+        isInitialLoadRef.current = false;
+        return;
+      }
+
+      setState((prev) => ({ ...prev, saving: true, error: null }));
+      try {
+        await saveFunction(data);
+        setState((prev) => ({
+          ...prev,
+          saving: false,
+          lastSaved: new Date(),
+          error: null,
+        }));
+        toast.success("Form saved successfully");
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to save";
+        setState((prev) => ({
+          ...prev,
+          saving: false,
+          error: errorMessage,
+        }));
+        toast.error("Failed to save form");
+      }
     }, delay)
   ).current;
 
@@ -62,19 +65,19 @@ export function useAutoSave<T>(
 
   // Handle data changes
   useEffect(() => {
-    // Skip the first render
+    // Skip the first render and set initial data
     if (isFirstRender.current) {
       isFirstRender.current = false;
       previousDataRef.current = data;
       return;
     }
 
-    // Only save if the data has actually changed
-    if (JSON.stringify(previousDataRef.current) !== JSON.stringify(data)) {
+    // Only save if shouldAutoSave is true and the data has actually changed
+    if (shouldAutoSave && JSON.stringify(previousDataRef.current) !== JSON.stringify(data)) {
       debouncedSave(data);
       previousDataRef.current = data;
     }
-  }, [data, debouncedSave]);
+  }, [data, debouncedSave, shouldAutoSave]);
 
   return state;
 }
