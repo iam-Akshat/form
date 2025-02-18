@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import type {
   FormConfiguration,
   FormField as FormFieldType,
@@ -26,9 +27,9 @@ import type {
   NumberValidation,
   SelectValidation,
 } from "./types";
+import { mockStorage } from "@/storage";
 
 interface FormRendererProps {
-  configuration: FormConfiguration;
   onSubmit: (data: Record<string, any>) => void;
 }
 
@@ -91,12 +92,31 @@ const createFormSchema = (fields: FormFieldType[]) => {
   return z.object(shape);
 };
 
-const FormRenderer: React.FC<FormRendererProps> = ({ configuration, onSubmit }) => {
-  const formSchema = createFormSchema(configuration.fields);
-  
+const FormRenderer: React.FC<FormRendererProps> = ({ onSubmit }) => {
+  const [configuration, setConfiguration] = useState<FormConfiguration | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Initialize form with empty schema
+  const formSchema = configuration ? createFormSchema(configuration.fields) : z.object({});
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
+
+  useEffect(() => {
+    const loadConfiguration = async () => {
+      try {
+        const data = await mockStorage.loadForm();
+        setConfiguration(data);
+      } catch (err) {
+        setError("Failed to load form configuration");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadConfiguration();
+  }, []);
 
   const renderField = (field: FormFieldType) => {
     return (
@@ -142,10 +162,34 @@ const FormRenderer: React.FC<FormRendererProps> = ({ configuration, onSubmit }) 
     );
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 text-center text-destructive">
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  if (!configuration) {
+    return (
+      <div className="p-4 text-center text-muted-foreground">
+        <p>No form configuration found</p>
+      </div>
+    );
+  }
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {configuration.fields.map(renderField)}
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        {configuration.fields.map((field) => renderField(field))}
         <Button type="submit">Submit</Button>
       </form>
     </Form>

@@ -20,12 +20,10 @@ import {
   DragEndEvent,
 } from '@dnd-kit/core';
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import FormRenderer from "./FormRenderer";
 
 const defaultField: FormField = {
   name: "",
@@ -38,7 +36,7 @@ const defaultField: FormField = {
 export const FormBuilder: React.FC = () => {
   const form = useForm<FormConfiguration>({
     defaultValues: {
-      fields: [defaultField],
+      fields: [],
     },
     resolver: zodResolver(formSchema),
   });
@@ -144,15 +142,6 @@ export const FormBuilder: React.FC = () => {
           </Form>
         </div>
 
-        <div className="space-y-8">
-          <h2 className="text-lg font-semibold">Form Preview</h2>
-          <FormRenderer
-            configuration={formState}
-            onSubmit={(data) => {
-              console.log("Form submitted with data:", data);
-            }}
-          />
-        </div>
       </div>
     </div>
   );
