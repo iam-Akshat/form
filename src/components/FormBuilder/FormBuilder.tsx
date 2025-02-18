@@ -10,6 +10,21 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { mockStorage } from "@/storage";
 import { formSchema } from "./validation";
 import type { FormConfiguration, FormField } from "./types";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 
 const defaultField: FormField = {
   name: "",
@@ -27,10 +42,27 @@ export const FormBuilder: React.FC = () => {
     resolver: zodResolver(formSchema),
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, move } = useFieldArray({
     control: form.control,
     name: "fields",
   });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = fields.findIndex((field) => field.id === active.id);
+      const newIndex = fields.findIndex((field) => field.id === over.id);
+      move(oldIndex, newIndex);
+    }
+  };
 
   const formState = form.watch();
   const autoSaveState = useAutoSave(formState, mockStorage.saveForm);
@@ -73,17 +105,29 @@ export const FormBuilder: React.FC = () => {
           ) : null}
         </div>
 
-        <div className="space-y-4">
-          {fields.map((field, index) => (
-            <FieldCard
-              key={field.id}
-              index={index}
-              onRemove={() => remove(index)}
-              form={form}
-              isLatest={index === fields.length - 1}
-            />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={fields.map(field => field.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-4">
+              {fields.map((field, index) => (
+                <FieldCard
+                  key={field.id}
+                  id={field.id}
+                  index={index}
+                  onRemove={() => remove(index)}
+                  form={form}
+                  isLatest={index === fields.length - 1}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
 
         <div className="flex space-x-2">
           <Button

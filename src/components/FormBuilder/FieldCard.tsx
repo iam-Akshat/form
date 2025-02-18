@@ -2,39 +2,61 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, ChevronDown, ChevronUp, GripVertical } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { ValidationFields } from './ValidationFields';
 import { FIELD_TYPES, NUMBER_VARIANTS } from './constants';
 import type { FormField as TFormField } from './types';
 import { UseFormReturn } from 'react-hook-form';
-import {FormControl,FormItem,FormLabel,FormDescription,FormField} from "@/components/ui/form"
+import { FormControl, FormItem, FormLabel, FormDescription, FormField } from "@/components/ui/form"
 import { Input } from '@/components/ui/input';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface FieldCardProps {
   index: number;
   onRemove: () => void;
   form: UseFormReturn<{ fields: TFormField[] }>;
   isLatest?: boolean;
+  id: string;
 }
 
-export const FieldCard: React.FC<FieldCardProps> = ({ index, onRemove, form, isLatest }) => {
+export const FieldCard: React.FC<FieldCardProps> = ({ index, onRemove, form, isLatest, id }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   useEffect(() => {
-    // Expand the card if it's the latest one
     if (isLatest) {
       setIsExpanded(true);
     }
   }, [isLatest]);
 
   return (
-    <Card className="p-4">
+    <Card className="p-4" ref={setNodeRef} style={style}>
       <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
         <div className="flex items-center gap-2">
+          <button 
+            className="cursor-grab touch-none p-1 hover:bg-accent hover:text-accent-foreground rounded-md"
+            {...attributes} 
+            {...listeners}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
           <CardTitle className="text-lg">Field {index + 1}</CardTitle>
-         
         </div>
         <div className="flex items-center gap-2">
           {!isExpanded && (
