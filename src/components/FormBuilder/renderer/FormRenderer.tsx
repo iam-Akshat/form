@@ -103,7 +103,7 @@ const FormRenderer: React.FC<FormRendererProps> = ({ onSubmit }) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" data-testid="loading-spinner" />
       </div>
     );
   }
@@ -133,6 +133,7 @@ const FormRenderer: React.FC<FormRendererProps> = ({ onSubmit }) => {
           size="icon"
           onClick={handleRefresh}
           disabled={isRefreshing}
+          aria-label="Refresh form"
         >
           {isRefreshing ? (
             <Loader2 className="h-4 w-4 animate-spin" />
