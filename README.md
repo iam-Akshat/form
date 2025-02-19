@@ -8,3 +8,4 @@
 ## Whats not included but should be
 - Routing
 - Using `react-query` for api calling
+- Commit messages are not indicative of real world commits
